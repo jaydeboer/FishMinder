@@ -1,0 +1,203 @@
+/* Dashboard styles */
+.dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.welcome-section {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-subtitle {
+    font-size: 1.125rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.dashboard-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+/* Trip info styles */
+.trip-info {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.trip-status {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0 0 0.5rem 0;
+}
+
+.trip-detail {
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #3b82f6;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Activity list */
+.activity-list {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.no-activity {
+    font-size: 1.125rem;
+    color: #6b7280;
+    margin: 0 0 0.5rem 0;
+}
+
+.activity-hint {
+    color: #9ca3af;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Responsive design */
+@media (min-width: 640px) {
+    .dashboard-title {
+        font-size: 2.5rem;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.25rem;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
+
+@media (min-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .dashboard-grid > :first-child {
+        grid-column: span 2;
+    }
+}
+
+@media (min-width: 1280px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .dashboard-grid > :first-child {
+        grid-column: span 2;
+    }
+    
+    .dashboard-grid > :nth-child(2) {
+        grid-column: span 2;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .welcome-section {
+        background: #000;
+        border: 2px solid #fff;
+    }
+    
+    .stat-item {
+        background-color: #fff;
+        border: 2px solid #000;
+    }
+    
+    .stat-number {
+        color: #000;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .welcome-section {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    }
+    
+    .stat-item {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f9fafb;
+    }
+    
+    .stat-number {
+        color: #60a5fa;
+    }
+    
+    .stat-label {
+        color: #d1d5db;
+    }
+    
+    .trip-status {
+        color: #d1d5db;
+    }
+    
+    .trip-detail,
+    .no-activity,
+    .activity-hint {
+        color: #9ca3af;
+    }
+}

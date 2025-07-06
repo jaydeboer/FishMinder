@@ -1,0 +1,58 @@
+@* Reusable card component for displaying information *@
+
+<div class="info-card @CssClass @SizeClass">
+    @if (!string.IsNullOrEmpty(Title) || !string.IsNullOrEmpty(Icon))
+    {
+        <div class="card-header">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <span class="card-icon">@Icon</span>
+            }
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <h3 class="card-title">@Title</h3>
+            }
+            @if (HeaderActions != null)
+            {
+                <div class="card-actions">
+                    @HeaderActions
+                </div>
+            }
+        </div>
+    }
+    
+    <div class="card-content">
+        @ChildContent
+    </div>
+    
+    @if (FooterActions != null)
+    {
+        <div class="card-footer">
+            @FooterActions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public CardSize Size { get; set; } = CardSize.Medium;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? FooterActions { get; set; }
+
+    private string SizeClass => Size switch
+    {
+        CardSize.Small => "card-sm",
+        CardSize.Large => "card-lg",
+        _ => "card-md"
+    };
+
+    public enum CardSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+}

@@ -1,0 +1,362 @@
+/* Anglers page styles */
+.anglers-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.page-subtitle {
+    font-size: 1.125rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.anglers-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+/* Warning card for no active trip */
+.warning-card {
+    border-left: 4px solid #f59e0b;
+}
+
+.no-trip-message {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.no-trip-message p {
+    margin: 0 0 0.5rem 0;
+    color: #6b7280;
+}
+
+/* Add angler form styles */
+.add-angler-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.form-input {
+    padding: 0.75rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    min-height: 44px; /* Touch-friendly */
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: #dc2626;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Anglers list styles */
+.anglers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.angler-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.angler-item:hover {
+    background-color: #f3f4f6;
+}
+
+.angler-item.active-angler {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.angler-item.fishing-angler {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.angler-item.active-angler.fishing-angler {
+    border-color: #8b5cf6;
+    background-color: #faf5ff;
+}
+
+.angler-info {
+    flex: 1;
+    min-width: 0; /* Allow text truncation */
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.angler-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.angler-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.active-badge {
+    background-color: #3b82f6;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.fishing-badge {
+    background-color: #10b981;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.angler-email {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.angler-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.angler-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.angler-actions {
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+/* No anglers state */
+.no-anglers {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.no-anglers-message {
+    font-size: 1.125rem;
+    color: #6b7280;
+    margin: 0 0 0.5rem 0;
+}
+
+.no-anglers-hint {
+    color: #9ca3af;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Angler summary */
+.angler-summary {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.summary-text {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Responsive design */
+@media (min-width: 640px) {
+    .page-title {
+        font-size: 2.5rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.25rem;
+    }
+    
+    .anglers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .add-angler-form {
+        flex-direction: row;
+        align-items: end;
+        gap: 1rem;
+    }
+    
+    .form-group {
+        flex: 1;
+    }
+    
+    .angler-meta {
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    .angler-controls {
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+
+    .angler-name {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+@media (min-width: 1024px) {
+    .anglers-grid {
+        grid-template-columns: 1fr 2fr;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .page-header {
+        background: #000;
+        border: 2px solid #fff;
+    }
+    
+    .angler-item {
+        background-color: #fff;
+        border: 2px solid #000;
+    }
+    
+    .form-input {
+        border: 2px solid #000;
+    }
+    
+    .form-input:focus {
+        border-color: #000;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .page-header {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    }
+    
+    .form-label {
+        color: #f9fafb;
+    }
+    
+    .form-input {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f9fafb;
+    }
+    
+    .form-input:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }
+    
+    .form-input:disabled {
+        background-color: #111827;
+        color: #6b7280;
+    }
+    
+    .angler-item {
+        background-color: #1f2937;
+        border-color: #374151;
+    }
+    
+    .angler-item:hover {
+        background-color: #111827;
+    }
+    
+    .angler-name {
+        color: #f9fafb;
+    }
+    
+    .angler-email {
+        color: #d1d5db;
+    }
+    
+    .angler-meta {
+        color: #9ca3af;
+    }
+    
+    .no-anglers-message,
+    .summary-text {
+        color: #d1d5db;
+    }
+    
+    .no-anglers-hint {
+        color: #9ca3af;
+    }
+    
+    .no-trip-message p {
+        color: #d1d5db;
+    }
+}

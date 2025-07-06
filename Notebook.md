@@ -1,0 +1,1 @@
+when you get to a good point, can you update the MVP.MD file will your progress and create instructions (in chat please) for the next agent to continue your work as this is getting to be a long thread?

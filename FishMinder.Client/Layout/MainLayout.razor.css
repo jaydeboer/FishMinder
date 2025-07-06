@@ -1,0 +1,121 @@
+/* Mobile-first design optimized for marine conditions */
+.fishminder-app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.app-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.app-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.trip-status {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+/* Main content */
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    padding-bottom: 5rem; /* Space for bottom nav */
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Bottom navigation for mobile */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    padding: 0.5rem 0;
+}
+
+/* Tablet and desktop adjustments */
+@media (min-width: 768px) {
+    .fishminder-app {
+        flex-direction: row;
+    }
+
+    .app-header {
+        position: static;
+        width: 250px;
+        height: 100vh;
+        padding: 2rem 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .app-title {
+        font-size: 1.75rem;
+    }
+
+    .main-content {
+        padding: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .bottom-nav {
+        position: static;
+        width: 250px;
+        height: auto;
+        border-top: none;
+        border-right: 1px solid #e5e7eb;
+        box-shadow: none;
+        background: #f8f9fa;
+        padding: 1rem;
+    }
+}
+
+/* High contrast for outdoor visibility */
+@media (prefers-contrast: high) {
+    .fishminder-app {
+        background-color: white;
+    }
+
+    .app-header {
+        background: #000;
+        color: white;
+    }
+
+    .bottom-nav {
+        background: white;
+        border-top: 2px solid #000;
+    }
+}

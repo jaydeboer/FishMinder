@@ -1,0 +1,66 @@
+﻿@page "/"
+
+<PageTitle>FishMinder Dashboard</PageTitle>
+
+<div class="dashboard">
+    <div class="welcome-section">
+        <h1 class="dashboard-title">🎣 Welcome to FishMinder</h1>
+        <p class="dashboard-subtitle">Track your catches, manage limits, and make every fishing trip count!</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <InfoCard Title="Current Trip" Icon="🚤" Size="InfoCard.CardSize.Large">
+            <ChildContent>
+                <div class="trip-info">
+                    <p class="trip-status">No active trip</p>
+                    <p class="trip-detail">Start a new fishing trip to begin tracking catches</p>
+                </div>
+            </ChildContent>
+            <FooterActions>
+                <TouchButton Text="Start Trip" Icon="▶️" Variant="TouchButton.ButtonVariant.Success" Size="TouchButton.ButtonSize.Large" />
+            </FooterActions>
+        </InfoCard>
+
+        <InfoCard Title="Quick Stats" Icon="📊">
+            <ChildContent>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Total Catches</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Species</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Anglers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Trips</div>
+                    </div>
+                </div>
+            </ChildContent>
+        </InfoCard>
+
+        <InfoCard Title="Quick Actions" Icon="⚡">
+            <ChildContent>
+                <div class="action-buttons">
+                    <TouchButton Text="Add Catch" Icon="🎣" Variant="TouchButton.ButtonVariant.Primary" Size="TouchButton.ButtonSize.Large" />
+                    <TouchButton Text="Manage Anglers" Icon="👥" Variant="TouchButton.ButtonVariant.Secondary" Size="TouchButton.ButtonSize.Large" />
+                    <TouchButton Text="View Species" Icon="🐟" Variant="TouchButton.ButtonVariant.Info" Size="TouchButton.ButtonSize.Large" />
+                </div>
+            </ChildContent>
+        </InfoCard>
+
+        <InfoCard Title="Recent Activity" Icon="📝">
+            <ChildContent>
+                <div class="activity-list">
+                    <p class="no-activity">No recent activity</p>
+                    <p class="activity-hint">Start fishing to see your catches here!</p>
+                </div>
+            </ChildContent>
+        </InfoCard>
+    </div>
+</div>

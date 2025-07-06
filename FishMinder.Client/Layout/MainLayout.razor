@@ -1,0 +1,23 @@
+﻿@inherits LayoutComponentBase
+
+<div class="fishminder-app">
+    <!-- Header with app title and current trip info -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="app-title">🎣 FishMinder</h1>
+            <div class="trip-status">
+                <!-- TODO: Add current trip status component -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content area -->
+    <main class="main-content">
+        @Body
+    </main>
+
+    <!-- Bottom navigation for mobile -->
+    <nav class="bottom-nav">
+        <NavMenu />
+    </nav>
+</div>

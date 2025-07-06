@@ -1,0 +1,191 @@
+/* Touch-optimized button styles */
+.touch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
+    line-height: 1.2;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Size variants */
+.touch-btn.btn-sm {
+    min-height: 36px;
+    min-width: 36px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.touch-btn.btn-md {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.touch-btn.btn-lg {
+    min-height: 52px;
+    min-width: 52px;
+    padding: 1rem 1.5rem;
+    font-size: 1.125rem;
+}
+
+.touch-btn.btn-xl {
+    min-height: 60px;
+    min-width: 60px;
+    padding: 1.25rem 2rem;
+    font-size: 1.25rem;
+}
+
+/* Color variants */
+.touch-btn.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.touch-btn.btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.touch-btn.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+}
+
+.touch-btn.btn-secondary:hover:not(:disabled) {
+    background-color: #4b5563;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.touch-btn.btn-success {
+    background-color: #10b981;
+    color: white;
+}
+
+.touch-btn.btn-success:hover:not(:disabled) {
+    background-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.touch-btn.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.touch-btn.btn-danger:hover:not(:disabled) {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.touch-btn.btn-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.touch-btn.btn-warning:hover:not(:disabled) {
+    background-color: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+.touch-btn.btn-info {
+    background-color: #06b6d4;
+    color: white;
+}
+
+.touch-btn.btn-info:hover:not(:disabled) {
+    background-color: #0891b2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+.touch-btn.btn-light {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.touch-btn.btn-light:hover:not(:disabled) {
+    background-color: #e5e7eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.touch-btn.btn-dark {
+    background-color: #374151;
+    color: white;
+}
+
+.touch-btn.btn-dark:hover:not(:disabled) {
+    background-color: #1f2937;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(55, 65, 81, 0.3);
+}
+
+/* Disabled state */
+.touch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Active/pressed state */
+.touch-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus state for accessibility */
+.touch-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Icon and text spacing */
+.btn-icon {
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+.btn-text {
+    line-height: 1.2;
+}
+
+/* Touch feedback for mobile devices */
+@media (hover: none) {
+    .touch-btn:hover {
+        transform: none;
+    }
+    
+    .touch-btn:active:not(:disabled) {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .touch-btn {
+        border: 2px solid currentColor;
+    }
+    
+    .touch-btn.btn-light {
+        border-color: #000;
+    }
+}

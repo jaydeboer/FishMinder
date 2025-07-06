@@ -1,0 +1,470 @@
+@page "/anglers"
+@using FishMinder.Client.Models
+@using FishMinder.Client.Services
+@inject IFishingTripService FishingTripService
+@inject IAnglerSessionService AnglerSessionService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Manage Anglers - FishMinder</PageTitle>
+
+<div class="anglers-page">
+    <div class="page-header">
+        <h1 class="page-title">👥 Manage Anglers</h1>
+        <p class="page-subtitle">Add and manage anglers for your fishing trip</p>
+    </div>
+
+    @if (currentTrip == null)
+    {
+        <InfoCard Title="No Active Trip" Icon="⚠️" CssClass="warning-card">
+            <ChildContent>
+                <div class="no-trip-message">
+                    <p>You need to start a fishing trip before managing anglers.</p>
+                    <p>Go to the dashboard to start a new trip.</p>
+                </div>
+            </ChildContent>
+            <FooterActions>
+                <TouchButton Text="Go to Dashboard" Icon="🏠" Variant="TouchButton.ButtonVariant.Primary"
+                           OnClick="@(() => NavigateToHome())" Size="TouchButton.ButtonSize.Large" />
+            </FooterActions>
+        </InfoCard>
+    }
+    else
+    {
+        <div class="anglers-grid">
+            <!-- Add New Angler Section -->
+            <InfoCard Title="Add New Angler" Icon="➕" Size="InfoCard.CardSize.Large">
+                <ChildContent>
+                    <div class="add-angler-form">
+                        <div class="form-group">
+                            <label for="anglerName" class="form-label">Angler Name *</label>
+                            <input @bind="newAnglerName" @onkeypress="@(async (e) => await HandleKeyPress(e))"
+                                   id="anglerName" type="text" class="form-input" placeholder="Enter angler name"
+                                   maxlength="50" disabled="@isLoading" />
+                            @if (!string.IsNullOrEmpty(nameError))
+                            {
+                                <div class="error-message">@nameError</div>
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label for="anglerEmail" class="form-label">Email (Optional)</label>
+                            <input @bind="newAnglerEmail" @onkeypress="@(async (e) => await HandleKeyPress(e))"
+                                   id="anglerEmail" type="email" class="form-input" placeholder="Enter email address"
+                                   disabled="@isLoading" />
+                            @if (!string.IsNullOrEmpty(emailError))
+                            {
+                                <div class="error-message">@emailError</div>
+                            }
+                        </div>
+                    </div>
+                </ChildContent>
+                <FooterActions>
+                    <TouchButton Text="@(isLoading ? "Adding..." : "Add Angler")" Icon="➕"
+                               Variant="TouchButton.ButtonVariant.Success" Size="TouchButton.ButtonSize.Large"
+                               OnClick="AddAngler" Disabled="@(isLoading || string.IsNullOrWhiteSpace(newAnglerName))" />
+                </FooterActions>
+            </InfoCard>
+
+            <!-- Active Anglers Section -->
+            <InfoCard Title="Active Anglers" Icon="👥" Size="InfoCard.CardSize.Large">
+                <ChildContent>
+                    @if (activeAnglers?.Any() == true)
+                    {
+                        <div class="anglers-list">
+                            @foreach (var angler in activeAnglers)
+                            {
+                                <div class="angler-item @(GetAnglerCssClass(angler.Id))">
+                                    <div class="angler-info">
+                                        <div class="angler-header">
+                                            <div class="angler-name">
+                                                @angler.Name
+                                                @if (activeAnglerForCatches?.Id == angler.Id)
+                                                {
+                                                    <span class="active-badge">🎯 Active</span>
+                                                }
+                                                @if (anglerFishingStatus.GetValueOrDefault(angler.Id))
+                                                {
+                                                    <span class="fishing-badge">🎣 Fishing</span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(angler.Email))
+                                            {
+                                                <div class="angler-email">@angler.Email</div>
+                                            }
+                                        </div>
+                                        <div class="angler-meta">
+                                            <span class="angler-added">Added: @angler.AddedToTrip.ToString("MMM dd, HH:mm")</span>
+                                            <span class="angler-catches">Catches: @GetAnglerCatchCount(angler.Id)</span>
+                                            @if (anglerStats.ContainsKey(angler.Id) && anglerStats[angler.Id].TotalFishingTime.TotalMinutes > 0)
+                                            {
+                                                <span class="fishing-time">Fishing: @FormatFishingTime(anglerStats[angler.Id].TotalFishingTime)</span>
+                                            }
+                                        </div>
+                                        <div class="angler-controls">
+                                            <TouchButton Text="@(anglerFishingStatus.GetValueOrDefault(angler.Id) ? "Stop Fishing" : "Start Fishing")"
+                                                       Icon="@(anglerFishingStatus.GetValueOrDefault(angler.Id) ? "⏹️" : "🎣")"
+                                                       Variant="@(anglerFishingStatus.GetValueOrDefault(angler.Id) ? TouchButton.ButtonVariant.Warning : TouchButton.ButtonVariant.Success)"
+                                                       Size="TouchButton.ButtonSize.Small"
+                                                       OnClick="@(() => ToggleAnglerFishing(angler.Id))"
+                                                       Disabled="@isLoading" />
+
+                                            <TouchButton Text="@(activeAnglerForCatches?.Id == angler.Id ? "Clear Active" : "Set Active")"
+                                                       Icon="@(activeAnglerForCatches?.Id == angler.Id ? "❌" : "🎯")"
+                                                       Variant="@(activeAnglerForCatches?.Id == angler.Id ? TouchButton.ButtonVariant.Secondary : TouchButton.ButtonVariant.Primary)"
+                                                       Size="TouchButton.ButtonSize.Small"
+                                                       OnClick="@(() => ToggleActiveAngler(angler.Id))"
+                                                       Disabled="@isLoading" />
+                                        </div>
+                                    </div>
+                                    <div class="angler-actions">
+                                        <TouchButton Text="Remove" Icon="🗑️" Variant="TouchButton.ButtonVariant.Danger"
+                                                   Size="TouchButton.ButtonSize.Small" OnClick="@(() => RemoveAngler(angler.Id))"
+                                                   Disabled="@isLoading" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-anglers">
+                            <p class="no-anglers-message">No anglers added yet</p>
+                            <p class="no-anglers-hint">Add your first angler above to get started!</p>
+                        </div>
+                    }
+                </ChildContent>
+                <FooterActions>
+                    @if (activeAnglers?.Any() == true)
+                    {
+                        <div class="angler-summary">
+                            <span class="summary-text">@(activeAnglers?.Count() ?? 0) angler(s) active</span>
+                        </div>
+                    }
+                </FooterActions>
+            </InfoCard>
+        </div>
+    }
+</div>
+
+@code {
+    private FishingTrip? currentTrip;
+    private List<Angler>? activeAnglers;
+    private string newAnglerName = string.Empty;
+    private string newAnglerEmail = string.Empty;
+    private string nameError = string.Empty;
+    private string emailError = string.Empty;
+    private bool isLoading = false;
+    private Angler? activeAnglerForCatches;
+    private Dictionary<Guid, bool> anglerFishingStatus = new();
+    private Dictionary<Guid, AnglerSessionStats> anglerStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentTrip();
+        await LoadSessionState();
+
+        // Subscribe to active angler changes
+        AnglerSessionService.ActiveAnglerChanged += OnActiveAnglerChanged;
+    }
+
+    public void Dispose()
+    {
+        AnglerSessionService.ActiveAnglerChanged -= OnActiveAnglerChanged;
+    }
+
+    private async Task LoadCurrentTrip()
+    {
+        try
+        {
+            currentTrip = await FishingTripService.GetCurrentTripAsync();
+            if (currentTrip != null)
+            {
+                activeAnglers = currentTrip.Anglers.Where(a => a.IsActive).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to load trip data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSessionState()
+    {
+        try
+        {
+            activeAnglerForCatches = await AnglerSessionService.GetActiveAnglerAsync();
+
+            if (activeAnglers != null)
+            {
+                foreach (var angler in activeAnglers)
+                {
+                    anglerFishingStatus[angler.Id] = await AnglerSessionService.IsAnglerFishingAsync(angler.Id);
+                    anglerStats[angler.Id] = await AnglerSessionService.GetSessionStatsAsync(angler.Id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to load session state: {ex.Message}");
+        }
+    }
+
+    private async void OnActiveAnglerChanged(object? sender, AnglerSessionChangedEventArgs e)
+    {
+        activeAnglerForCatches = e.CurrentAngler;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AddAngler()
+    {
+        if (isLoading) return;
+
+        // Clear previous errors
+        nameError = string.Empty;
+        emailError = string.Empty;
+
+        // Validate input
+        if (string.IsNullOrWhiteSpace(newAnglerName))
+        {
+            nameError = "Angler name is required";
+            return;
+        }
+
+        if (newAnglerName.Length > 50)
+        {
+            nameError = "Name must be 50 characters or less";
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(newAnglerEmail) && !IsValidEmail(newAnglerEmail))
+        {
+            emailError = "Please enter a valid email address";
+            return;
+        }
+
+        // Check for duplicate names
+        if (activeAnglers?.Any(a => a.Name.Equals(newAnglerName.Trim(), StringComparison.OrdinalIgnoreCase)) == true)
+        {
+            nameError = "An angler with this name already exists";
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var newAngler = new Angler
+            {
+                Name = newAnglerName.Trim(),
+                Email = string.IsNullOrWhiteSpace(newAnglerEmail) ? null : newAnglerEmail.Trim()
+            };
+
+            var success = await FishingTripService.AddAnglerToCurrentTripAsync(newAngler);
+            
+            if (success)
+            {
+                // Clear form
+                newAnglerName = string.Empty;
+                newAnglerEmail = string.Empty;
+                
+                // Reload data
+                await LoadCurrentTrip();
+                
+                await ShowSuccess($"Added {newAngler.Name} to the trip!");
+            }
+            else
+            {
+                await ShowError("Failed to add angler. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error adding angler: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveAngler(Guid anglerId)
+    {
+        if (isLoading) return;
+
+        var angler = activeAnglers?.FirstOrDefault(a => a.Id == anglerId);
+        if (angler == null) return;
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Remove {angler.Name} from this trip? This will also remove all their catches.");
+        
+        if (!confirmed) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await FishingTripService.RemoveAnglerFromCurrentTripAsync(anglerId);
+            
+            if (success)
+            {
+                await LoadCurrentTrip();
+                await ShowSuccess($"Removed {angler.Name} from the trip");
+            }
+            else
+            {
+                await ShowError("Failed to remove angler. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error removing angler: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private int GetAnglerCatchCount(Guid anglerId)
+    {
+        return currentTrip?.GetCatchesForAngler(anglerId).Count() ?? 0;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newAnglerName))
+        {
+            await AddAngler();
+        }
+    }
+
+    private async Task NavigateToHome()
+    {
+        await JSRuntime.InvokeVoidAsync("history.pushState", null, "", "/");
+        await JSRuntime.InvokeVoidAsync("location.reload");
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task ShowSuccess(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+
+    private async Task ShowError(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+
+    private async Task ToggleAnglerFishing(Guid anglerId)
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var currentStatus = anglerFishingStatus.GetValueOrDefault(anglerId);
+            var success = await AnglerSessionService.SetAnglerFishingStatusAsync(anglerId, !currentStatus);
+
+            if (success)
+            {
+                anglerFishingStatus[anglerId] = !currentStatus;
+                anglerStats[anglerId] = await AnglerSessionService.GetSessionStatsAsync(anglerId);
+
+                var angler = activeAnglers?.FirstOrDefault(a => a.Id == anglerId);
+                var status = !currentStatus ? "started" : "stopped";
+                await ShowSuccess($"{angler?.Name} has {status} fishing!");
+            }
+            else
+            {
+                await ShowError("Failed to update fishing status. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error updating fishing status: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleActiveAngler(Guid anglerId)
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (activeAnglerForCatches?.Id == anglerId)
+            {
+                await AnglerSessionService.ClearActiveAnglerAsync();
+                await ShowSuccess("Cleared active angler selection");
+            }
+            else
+            {
+                var success = await AnglerSessionService.SetActiveAnglerAsync(anglerId);
+                if (success)
+                {
+                    var angler = activeAnglers?.FirstOrDefault(a => a.Id == anglerId);
+                    await ShowSuccess($"{angler?.Name} is now active for catch assignment!");
+                }
+                else
+                {
+                    await ShowError("Failed to set active angler. Please try again.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error setting active angler: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetAnglerCssClass(Guid anglerId)
+    {
+        var classes = new List<string>();
+
+        if (activeAnglerForCatches?.Id == anglerId)
+            classes.Add("active-angler");
+
+        if (anglerFishingStatus.GetValueOrDefault(anglerId))
+            classes.Add("fishing-angler");
+
+        return string.Join(" ", classes);
+    }
+
+    private string FormatFishingTime(TimeSpan time)
+    {
+        if (time.TotalHours >= 1)
+            return $"{time.Hours}h {time.Minutes}m";
+        else
+            return $"{time.Minutes}m";
+    }
+}
