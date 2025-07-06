@@ -1,0 +1,426 @@
+@page "/catch"
+@using FishMinder.Client.Models
+@using FishMinder.Client.Services
+@inject IFishingTripService FishingTripService
+@inject IAnglerSessionService AnglerSessionService
+@inject IFishSpeciesService FishSpeciesService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Add Catch - FishMinder</PageTitle>
+
+<div class="catch-page">
+    <div class="page-header">
+        <h1 class="page-title">🎣 Add Catch</h1>
+        <p class="page-subtitle">Quick entry for your latest catch</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+    }
+    else if (activeAngler == null)
+    {
+        <InfoCard Title="No Active Angler" Icon="⚠️" Size="InfoCard.CardSize.Large">
+            <ChildContent>
+                <p>You need to select an active angler before adding catches.</p>
+                <p>Go to the Anglers page to set up and select an angler.</p>
+            </ChildContent>
+            <FooterActions>
+                <TouchButton Text="Go to Anglers" Icon="👥" Variant="TouchButton.ButtonVariant.Primary" 
+                           OnClick="@(() => NavigateToAnglers())" />
+            </FooterActions>
+        </InfoCard>
+    }
+    else
+    {
+        <div class="catch-form-container">
+            <!-- Active Angler Display -->
+            <InfoCard Title="Active Angler" Icon="🎣" Size="InfoCard.CardSize.Medium">
+                <ChildContent>
+                    <div class="active-angler-info">
+                        <p class="angler-name">@activeAngler.Name</p>
+                        <p class="angler-stats">@sessionStats.CatchesThisSession catches today</p>
+                    </div>
+                </ChildContent>
+            </InfoCard>
+
+            <!-- Quick Catch Form -->
+            <InfoCard Title="Catch Details" Icon="📝" Size="InfoCard.CardSize.Large">
+                <ChildContent>
+                    <EditForm Model="@newCatch" OnValidSubmit="@HandleValidSubmit" class="catch-form">
+                        <DataAnnotationsValidator />
+                        
+                        <!-- Species Selection -->
+                        <div class="form-group">
+                            <label for="species-select" class="form-label">Fish Species *</label>
+                            @if (!string.IsNullOrEmpty(speciesError))
+                            {
+                                <div class="error-message">@speciesError</div>
+                            }
+                            
+                            <!-- Species Search -->
+                            <div class="species-search">
+                                <input type="text" @bind="speciesSearchTerm" @oninput="OnSpeciesSearchChanged" 
+                                       placeholder="Search species..." class="form-input" />
+                            </div>
+                            
+                            <!-- Species Dropdown -->
+                            <select @bind="selectedSpeciesId" class="form-select" id="species-select">
+                                <option value="">Select a species...</option>
+                                @if (filteredSpecies != null)
+                                {
+                                    @foreach (var species in filteredSpecies)
+                                    {
+                                        <option value="@species.Id">@species.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Quick Species Buttons -->
+                        @if (commonSpecies != null && commonSpecies.Any())
+                        {
+                            <div class="form-group">
+                                <label class="form-label">Quick Select</label>
+                                <div class="quick-species-buttons">
+                                    @foreach (var species in commonSpecies.Take(4))
+                                    {
+                                        <TouchButton Text="@species.Name" 
+                                                   Variant="@(selectedSpeciesId == species.Id.ToString() ? TouchButton.ButtonVariant.Success : TouchButton.ButtonVariant.Secondary)"
+                                                   Size="TouchButton.ButtonSize.Small"
+                                                   OnClick="@(() => SelectSpecies(species.Id))" />
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Disposition Selection -->
+                        <div class="form-group">
+                            <label for="disposition-select" class="form-label">Disposition *</label>
+                            <select @bind="newCatch.Disposition" class="form-select" id="disposition-select">
+                                <option value="@FishDisposition.Released">🔄 Released</option>
+                                <option value="@FishDisposition.Kept">🏠 Kept</option>
+                                <option value="@FishDisposition.InLivewell">🪣 In Livewell</option>
+                                <option value="@FishDisposition.Died">💀 Died</option>
+                            </select>
+                        </div>
+
+                        <!-- Optional Details -->
+                        <div class="form-group">
+                            <label class="form-label">Optional Details</label>
+                            
+                            <div class="optional-fields">
+                                <div class="field-row">
+                                    <div class="field-half">
+                                        <label for="length" class="field-label">Length (inches)</label>
+                                        <input type="number" @bind="newCatch.Length" step="0.1" min="0" max="100" 
+                                               class="form-input" id="length" placeholder="0.0" />
+                                    </div>
+                                    <div class="field-half">
+                                        <label for="weight" class="field-label">Weight (lbs)</label>
+                                        <input type="number" @bind="newCatch.Weight" step="0.1" min="0" max="100" 
+                                               class="form-input" id="weight" placeholder="0.0" />
+                                    </div>
+                                </div>
+                                
+                                <div class="field-row">
+                                    <div class="field-full">
+                                        <label for="bait" class="field-label">Bait/Lure Used</label>
+                                        <input type="text" @bind="newCatch.BaitUsed" class="form-input" 
+                                               id="bait" placeholder="e.g., Worm, Spinner, Jig" />
+                                    </div>
+                                </div>
+                                
+                                <div class="field-row">
+                                    <div class="field-full">
+                                        <label for="notes" class="field-label">Notes</label>
+                                        <textarea @bind="newCatch.Notes" class="form-textarea" 
+                                                id="notes" placeholder="Additional details about this catch..." rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <TouchButton Text="Add Catch" Icon="✅" Type="submit" 
+                                       Variant="TouchButton.ButtonVariant.Success" 
+                                       Size="TouchButton.ButtonSize.Large" 
+                                       IsDisabled="@(string.IsNullOrEmpty(selectedSpeciesId))" />
+                            <TouchButton Text="Clear Form" Icon="🗑️" 
+                                       Variant="TouchButton.ButtonVariant.Secondary" 
+                                       Size="TouchButton.ButtonSize.Medium"
+                                       OnClick="@ClearForm" />
+                        </div>
+                    </EditForm>
+                </ChildContent>
+            </InfoCard>
+        </div>
+    }
+
+    <!-- Recent Catches -->
+    @if (recentCatches != null && recentCatches.Any())
+    {
+        <div class="recent-catches-section">
+            <InfoCard Title="Recent Catches" Icon="📋" Size="InfoCard.CardSize.Large">
+                <ChildContent>
+                    <div class="recent-catches-list">
+                        @foreach (var fishCatch in recentCatches.Take(5))
+                        {
+                            <div class="catch-item">
+                                <div class="catch-info">
+                                    <span class="catch-species">@GetSpeciesName(fishCatch.SpeciesId)</span>
+                                    <span class="catch-time">@fishCatch.CaughtAt.ToString("HH:mm")</span>
+                                </div>
+                                <div class="catch-disposition">
+                                    @GetDispositionIcon(fishCatch.Disposition)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </ChildContent>
+                <FooterActions>
+                    <TouchButton Text="View All Catches" Icon="📊" 
+                               Variant="TouchButton.ButtonVariant.Primary" 
+                               OnClick="@(() => NavigateToCatchHistory())" />
+                </FooterActions>
+            </InfoCard>
+        </div>
+    }
+</div>
+
+@code {
+    private FishCatch newCatch = new();
+    private Angler? activeAngler;
+    private AnglerSessionStats sessionStats = new();
+    private List<FishSpecies>? allSpecies;
+    private List<FishSpecies>? filteredSpecies;
+    private List<FishSpecies>? commonSpecies;
+    private List<FishCatch>? recentCatches;
+    private string selectedSpeciesId = string.Empty;
+    private string speciesSearchTerm = string.Empty;
+    private string speciesError = string.Empty;
+    private bool isLoading = true;
+    private Dictionary<Guid, string> speciesNameCache = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadInitialData();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to load page data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        // Subscribe to active angler changes
+        AnglerSessionService.ActiveAnglerChanged += OnActiveAnglerChanged;
+    }
+
+    public void Dispose()
+    {
+        AnglerSessionService.ActiveAnglerChanged -= OnActiveAnglerChanged;
+    }
+
+    private async Task LoadInitialData()
+    {
+        // Load active angler and session stats
+        activeAngler = await AnglerSessionService.GetActiveAnglerAsync();
+        if (activeAngler != null)
+        {
+            sessionStats = await AnglerSessionService.GetSessionStatsAsync(activeAngler.Id);
+        }
+
+        // Load species data
+        await LoadSpeciesData();
+
+        // Load recent catches
+        await LoadRecentCatches();
+
+        // Initialize new catch with active angler
+        if (activeAngler != null)
+        {
+            newCatch.AnglerId = activeAngler.Id;
+        }
+    }
+
+    private async Task LoadSpeciesData()
+    {
+        // Initialize species if needed
+        if (await FishSpeciesService.NeedsInitializationAsync())
+        {
+            await FishSpeciesService.InitializeDefaultSpeciesAsync();
+        }
+
+        // Load all species sorted by usage
+        allSpecies = (await FishSpeciesService.GetSpeciesSortedByUsageAsync()).ToList();
+        filteredSpecies = allSpecies;
+
+        // Load common/most used species for quick buttons
+        commonSpecies = (await FishSpeciesService.GetMostUsedSpeciesAsync(6)).ToList();
+
+        // Build species name cache
+        foreach (var species in allSpecies)
+        {
+            speciesNameCache[species.Id] = species.Name;
+        }
+    }
+
+    private async Task LoadRecentCatches()
+    {
+        var currentTrip = await FishingTripService.GetCurrentTripAsync();
+        if (currentTrip != null && activeAngler != null)
+        {
+            recentCatches = currentTrip.GetCatchesForAngler(activeAngler.Id)
+                .OrderByDescending(c => c.CaughtAt)
+                .ToList();
+        }
+    }
+
+    private async void OnActiveAnglerChanged(object? sender, AnglerSessionChangedEventArgs e)
+    {
+        await LoadInitialData();
+        StateHasChanged();
+    }
+
+    private async Task OnSpeciesSearchChanged(ChangeEventArgs e)
+    {
+        speciesSearchTerm = e.Value?.ToString() ?? string.Empty;
+        await FilterSpecies();
+    }
+
+    private async Task FilterSpecies()
+    {
+        if (allSpecies == null) return;
+
+        if (string.IsNullOrWhiteSpace(speciesSearchTerm))
+        {
+            filteredSpecies = allSpecies;
+        }
+        else
+        {
+            filteredSpecies = (await FishSpeciesService.SearchSpeciesByNameAsync(speciesSearchTerm)).ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private void SelectSpecies(Guid speciesId)
+    {
+        selectedSpeciesId = speciesId.ToString();
+        newCatch.SpeciesId = speciesId;
+        speciesError = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            // Validate required fields
+            if (string.IsNullOrEmpty(selectedSpeciesId))
+            {
+                speciesError = "Please select a fish species";
+                return;
+            }
+
+            if (activeAngler == null)
+            {
+                await ShowError("No active angler selected");
+                return;
+            }
+
+            // Set the species ID and angler ID
+            newCatch.SpeciesId = Guid.Parse(selectedSpeciesId);
+            newCatch.AnglerId = activeAngler.Id;
+            newCatch.CaughtAt = DateTime.UtcNow;
+
+            // Add catch to current trip
+            var success = await FishingTripService.AddCatchToCurrentTripAsync(newCatch);
+
+            if (success)
+            {
+                // Record species usage for smart sorting
+                await FishSpeciesService.RecordSpeciesUsageAsync(newCatch.SpeciesId);
+
+                // Show success message
+                await ShowSuccess("Catch added successfully!");
+
+                // Clear form and reload data
+                await ClearForm();
+                await LoadInitialData();
+            }
+            else
+            {
+                await ShowError("Failed to add catch. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error adding catch: {ex.Message}");
+        }
+    }
+
+    private async Task ClearForm()
+    {
+        newCatch = new FishCatch();
+        if (activeAngler != null)
+        {
+            newCatch.AnglerId = activeAngler.Id;
+        }
+        selectedSpeciesId = string.Empty;
+        speciesSearchTerm = string.Empty;
+        speciesError = string.Empty;
+
+        // Reset species filter
+        await FilterSpecies();
+        StateHasChanged();
+    }
+
+    private string GetSpeciesName(Guid speciesId)
+    {
+        return speciesNameCache.TryGetValue(speciesId, out var name) ? name : "Unknown Species";
+    }
+
+    private string GetDispositionIcon(FishDisposition disposition)
+    {
+        return disposition switch
+        {
+            FishDisposition.Released => "🔄",
+            FishDisposition.Kept => "🏠",
+            FishDisposition.InLivewell => "🪣",
+            FishDisposition.Died => "💀",
+            _ => "❓"
+        };
+    }
+
+    private async Task NavigateToAnglers()
+    {
+        await JSRuntime.InvokeVoidAsync("window.location.href", "/anglers");
+    }
+
+    private async Task NavigateToCatchHistory()
+    {
+        await JSRuntime.InvokeVoidAsync("window.location.href", "/catches");
+    }
+
+    private async Task ShowError(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error: {message}");
+    }
+
+    private async Task ShowSuccess(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+}
