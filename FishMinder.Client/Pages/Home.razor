@@ -1,4 +1,8 @@
 ﻿@page "/"
+@using FishMinder.Client.Models
+@using FishMinder.Client.Services
+@inject IFishingTripService FishingTripService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>FishMinder Dashboard</PageTitle>
 
@@ -12,12 +16,30 @@
         <InfoCard Title="Current Trip" Icon="🚤" Size="InfoCard.CardSize.Large">
             <ChildContent>
                 <div class="trip-info">
-                    <p class="trip-status">No active trip</p>
-                    <p class="trip-detail">Start a new fishing trip to begin tracking catches</p>
+                    @if (currentTrip == null)
+                    {
+                        <p class="trip-status">No active trip</p>
+                        <p class="trip-detail">Start a new fishing trip to begin tracking catches</p>
+                    }
+                    else
+                    {
+                        <p class="trip-status">@currentTrip.Name</p>
+                        <p class="trip-detail">Started @currentTrip.StartTime.ToString("MMM dd, yyyy HH:mm")</p>
+                        <p class="trip-detail">@currentTrip.Anglers.Count(a => a.IsActive) anglers, @currentTrip.Catches.Count catches</p>
+                    }
                 </div>
             </ChildContent>
             <FooterActions>
-                <TouchButton Text="Start Trip" Icon="▶️" Variant="TouchButton.ButtonVariant.Success" Size="TouchButton.ButtonSize.Large" />
+                @if (currentTrip == null)
+                {
+                    <TouchButton Text="Start Trip" Icon="▶️" Variant="TouchButton.ButtonVariant.Success"
+                               Size="TouchButton.ButtonSize.Large" OnClick="@StartNewTrip" />
+                }
+                else
+                {
+                    <TouchButton Text="End Trip" Icon="⏹️" Variant="TouchButton.ButtonVariant.Warning"
+                               Size="TouchButton.ButtonSize.Large" OnClick="@EndCurrentTrip" />
+                }
             </FooterActions>
         </InfoCard>
 
@@ -47,9 +69,12 @@
         <InfoCard Title="Quick Actions" Icon="⚡">
             <ChildContent>
                 <div class="action-buttons">
-                    <TouchButton Text="Add Catch" Icon="🎣" Variant="TouchButton.ButtonVariant.Primary" Size="TouchButton.ButtonSize.Large" />
-                    <TouchButton Text="Manage Anglers" Icon="👥" Variant="TouchButton.ButtonVariant.Secondary" Size="TouchButton.ButtonSize.Large" />
-                    <TouchButton Text="View Species" Icon="🐟" Variant="TouchButton.ButtonVariant.Info" Size="TouchButton.ButtonSize.Large" />
+                    <TouchButton Text="Add Catch" Icon="🎣" Variant="TouchButton.ButtonVariant.Primary"
+                               Size="TouchButton.ButtonSize.Large" OnClick="@(() => NavigateToPage("/catch"))" />
+                    <TouchButton Text="Manage Anglers" Icon="👥" Variant="TouchButton.ButtonVariant.Secondary"
+                               Size="TouchButton.ButtonSize.Large" OnClick="@(() => NavigateToPage("/anglers"))" />
+                    <TouchButton Text="View Species" Icon="🐟" Variant="TouchButton.ButtonVariant.Info"
+                               Size="TouchButton.ButtonSize.Large" OnClick="@(() => NavigateToPage("/species"))" />
                 </div>
             </ChildContent>
         </InfoCard>
@@ -64,3 +89,94 @@
         </InfoCard>
     </div>
 </div>
+
+@code {
+    private FishingTrip? currentTrip;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentTrip();
+    }
+
+    private async Task LoadCurrentTrip()
+    {
+        try
+        {
+            currentTrip = await FishingTripService.GetCurrentTripAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to load trip data: {ex.Message}");
+        }
+    }
+
+    private async Task StartNewTrip()
+    {
+        if (isLoading) return;
+
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            var tripName = $"Fishing Trip - {DateTime.Now:MMM dd, yyyy}";
+            currentTrip = await FishingTripService.StartNewTripAsync(tripName);
+
+            await ShowSuccess("New fishing trip started! You can now add anglers.");
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to start trip: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EndCurrentTrip()
+    {
+        if (isLoading) return;
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to end this trip? This action cannot be undone.");
+        if (!confirmed) return;
+
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            await FishingTripService.EndCurrentTripAsync();
+            currentTrip = null;
+
+            await ShowSuccess("Trip ended successfully!");
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to end trip: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowError(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error: {message}");
+    }
+
+    private async Task ShowSuccess(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+
+    private async Task NavigateToPage(string url)
+    {
+        await JSRuntime.InvokeVoidAsync("window.location.href", url);
+    }
+}
