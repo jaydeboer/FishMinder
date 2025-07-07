@@ -1,0 +1,285 @@
+@page "/species"
+@using FishMinder.Client.Models
+@using FishMinder.Client.Services
+@inject ISpeciesCountService SpeciesCountService
+@inject IFishingTripService FishingTripService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Species Counts - FishMinder</PageTitle>
+
+<div class="species-dashboard">
+    <div class="page-header">
+        <h1 class="page-title">🐟 Species Dashboard</h1>
+        <p class="page-subtitle">Track your catches and daily limits</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading species data...</p>
+        </div>
+    }
+    else if (currentTrip == null)
+    {
+        <InfoCard Title="No Active Trip" Icon="🚤" Size="InfoCard.CardSize.Large">
+            <ChildContent>
+                <p>Start a fishing trip to track species counts and limits.</p>
+            </ChildContent>
+            <FooterActions>
+                <TouchButton Text="Go to Dashboard" Icon="🏠" Variant="TouchButton.ButtonVariant.Primary"
+                           OnClick="@(() => NavigateToPage("/"))" />
+            </FooterActions>
+        </InfoCard>
+    }
+    else
+    {
+        <!-- Trip Summary -->
+        <InfoCard Title="Trip Summary" Icon="📊" Size="InfoCard.CardSize.Large">
+            <ChildContent>
+                <div class="trip-summary">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">@tripStats.TotalCatches</div>
+                            <div class="stat-label">Total Catches</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">@tripStats.TotalKept</div>
+                            <div class="stat-label">Kept</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">@tripStats.TotalReleased</div>
+                            <div class="stat-label">Released</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">@tripStats.UniqueSpecies</div>
+                            <div class="stat-label">Species</div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(tripStats.MostCaughtSpecies))
+                    {
+                        <div class="trip-highlights">
+                            <p><strong>Most Caught:</strong> @tripStats.MostCaughtSpecies</p>
+                            @if (!string.IsNullOrEmpty(tripStats.TopAngler))
+                            {
+                                <p><strong>Top Angler:</strong> @tripStats.TopAngler</p>
+                            }
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </InfoCard>
+
+        <!-- Limit Warnings -->
+        @if (limitWarnings.Any() || limitExceedings.Any())
+        {
+            <InfoCard Title="Limit Alerts" Icon="⚠️" Size="InfoCard.CardSize.Large">
+                <ChildContent>
+                    @if (limitExceedings.Any())
+                    {
+                        <div class="limit-alerts exceeded">
+                            <h4>⛔ Limits Exceeded</h4>
+                            @foreach (var warning in limitExceedings)
+                            {
+                                <div class="alert-item exceeded">
+                                    <span class="species-name">@warning.SpeciesName</span>
+                                    <span class="limit-info">@warning.CurrentCount/@warning.Limit</span>
+                                    @if (!string.IsNullOrEmpty(warning.AnglerName))
+                                    {
+                                        <span class="angler-name">(@warning.AnglerName)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    
+                    @if (limitWarnings.Any())
+                    {
+                        <div class="limit-alerts approaching">
+                            <h4>⚡ Approaching Limits</h4>
+                            @foreach (var warning in limitWarnings)
+                            {
+                                <div class="alert-item approaching">
+                                    <span class="species-name">@warning.SpeciesName</span>
+                                    <span class="limit-info">@warning.CurrentCount/@warning.Limit</span>
+                                    @if (!string.IsNullOrEmpty(warning.AnglerName))
+                                    {
+                                        <span class="angler-name">(@warning.AnglerName)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </ChildContent>
+            </InfoCard>
+        }
+
+        <!-- Species Counts -->
+        @if (speciesCounts.Any())
+        {
+            <div class="species-grid">
+                @foreach (var speciesCount in speciesCounts)
+                {
+                    <div class="species-card">
+                        <div class="species-header">
+                            <h3 class="species-name">@speciesCount.SpeciesName</h3>
+                            <div class="species-totals">
+                                <span class="total-caught">@speciesCount.TotalCaught total</span>
+                            </div>
+                        </div>
+
+                        <div class="species-breakdown">
+                            <div class="breakdown-item kept">
+                                <span class="count">@speciesCount.TotalKept</span>
+                                <span class="label">Kept</span>
+                            </div>
+                            <div class="breakdown-item released">
+                                <span class="count">@speciesCount.TotalReleased</span>
+                                <span class="label">Released</span>
+                            </div>
+                            @if (speciesCount.InLivewell > 0)
+                            {
+                                <div class="breakdown-item livewell">
+                                    <span class="count">@speciesCount.InLivewell</span>
+                                    <span class="label">Livewell</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (speciesCount.DailyLimit > 0)
+                        {
+                            <div class="limit-progress">
+                                <div class="limit-header">
+                                    <span class="limit-label">Daily Limit</span>
+                                    <span class="limit-count">@speciesCount.TotalKept / @speciesCount.DailyLimit</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill @GetLimitProgressClass(speciesCount)" 
+                                         style="width: @Math.Min(speciesCount.DailyLimitPercentage, 100)%"></div>
+                                </div>
+                                @if (speciesCount.IsOverDailyLimit)
+                                {
+                                    <div class="limit-status exceeded">⛔ Limit Exceeded</div>
+                                }
+                                else if (speciesCount.IsApproachingDailyLimit)
+                                {
+                                    <div class="limit-status approaching">⚡ Approaching Limit</div>
+                                }
+                                else
+                                {
+                                    <div class="limit-status safe">✅ Within Limit</div>
+                                }
+                            </div>
+                        }
+
+                        @if (speciesCount.LargestFish.HasValue || speciesCount.AverageSize.HasValue)
+                        {
+                            <div class="size-stats">
+                                @if (speciesCount.LargestFish.HasValue)
+                                {
+                                    <div class="size-stat">
+                                        <span class="size-label">Largest:</span>
+                                        <span class="size-value">@speciesCount.LargestFish.Value.ToString("F1")"</span>
+                                    </div>
+                                }
+                                @if (speciesCount.AverageSize.HasValue)
+                                {
+                                    <div class="size-stat">
+                                        <span class="size-label">Average:</span>
+                                        <span class="size-value">@speciesCount.AverageSize.Value.ToString("F1")"</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="species-actions">
+                            <TouchButton Text="View Details" Icon="📋" Variant="TouchButton.ButtonVariant.Secondary"
+                                       Size="TouchButton.ButtonSize.Small" 
+                                       OnClick="@(() => ViewSpeciesDetails(speciesCount.SpeciesId))" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <InfoCard Title="No Catches Yet" Icon="🎣">
+                <ChildContent>
+                    <p>Start catching fish to see species counts and limits here!</p>
+                </ChildContent>
+                <FooterActions>
+                    <TouchButton Text="Add Catch" Icon="🎣" Variant="TouchButton.ButtonVariant.Primary"
+                               OnClick="@(() => NavigateToPage("/catch"))" />
+                </FooterActions>
+            </InfoCard>
+        }
+    }
+</div>
+
+@code {
+    private FishingTrip? currentTrip;
+    private TripSpeciesStatistics tripStats = new();
+    private List<SpeciesCount> speciesCounts = new();
+    private List<SpeciesLimitWarning> limitWarnings = new();
+    private List<SpeciesLimitWarning> limitExceedings = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            currentTrip = await FishingTripService.GetCurrentTripAsync();
+            
+            if (currentTrip != null)
+            {
+                tripStats = await SpeciesCountService.GetTripSpeciesStatisticsAsync();
+                speciesCounts = (await SpeciesCountService.GetCurrentTripSpeciesCountsAsync()).ToList();
+                limitWarnings = (await SpeciesCountService.GetLimitWarningsAsync()).ToList();
+                limitExceedings = (await SpeciesCountService.GetLimitExceedingsAsync()).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error loading species data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetLimitProgressClass(SpeciesCount speciesCount)
+    {
+        if (speciesCount.IsOverDailyLimit)
+            return "exceeded";
+        else if (speciesCount.IsApproachingDailyLimit)
+            return "approaching";
+        else
+            return "safe";
+    }
+
+    private async Task ViewSpeciesDetails(Guid speciesId)
+    {
+        // Navigate to catches page filtered by species
+        await NavigateToPage($"/catches?species={speciesId}");
+    }
+
+    private async Task NavigateToPage(string url)
+    {
+        await JSRuntime.InvokeVoidAsync("window.location.href", url);
+    }
+
+    private async Task ShowError(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+}

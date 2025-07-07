@@ -18,6 +18,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IFishingTripService, FishingTripService>();
 builder.Services.AddScoped<IFishSpeciesService, FishSpeciesService>();
 builder.Services.AddScoped<IAnglerSessionService, AnglerSessionService>();
+builder.Services.AddScoped<ISpeciesCountService, SpeciesCountService>();
 
 // TODO: Add GPS service and other services in later phases
 

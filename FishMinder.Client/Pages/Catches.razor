@@ -1,0 +1,417 @@
+@page "/catches"
+@using FishMinder.Client.Models
+@using FishMinder.Client.Services
+@inject IFishingTripService FishingTripService
+@inject IFishSpeciesService FishSpeciesService
+@inject ISpeciesCountService SpeciesCountService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Catch History - FishMinder</PageTitle>
+
+<div class="catches-page">
+    <div class="page-header">
+        <h1 class="page-title">🎣 Catch History</h1>
+        <p class="page-subtitle">View and manage all your catches</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading catch history...</p>
+        </div>
+    }
+    else if (currentTrip == null)
+    {
+        <InfoCard Title="No Active Trip" Icon="🚤" Size="InfoCard.CardSize.Large">
+            <ChildContent>
+                <p>Start a fishing trip to view catch history.</p>
+            </ChildContent>
+            <FooterActions>
+                <TouchButton Text="Go to Dashboard" Icon="🏠" Variant="TouchButton.ButtonVariant.Primary"
+                           OnClick="@(() => NavigateToPage("/"))" />
+            </FooterActions>
+        </InfoCard>
+    }
+    else
+    {
+        <!-- Filters and Controls -->
+        <InfoCard Title="Filters" Icon="🔍">
+            <ChildContent>
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label for="species-filter">Species:</label>
+                        <select id="species-filter" @bind="selectedSpeciesFilter" @bind:after="ApplyFilters">
+                            <option value="">All Species</option>
+                            @foreach (var species in availableSpecies)
+                            {
+                                <option value="@species.Id">@species.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="angler-filter">Angler:</label>
+                        <select id="angler-filter" @bind="selectedAnglerFilter" @bind:after="ApplyFilters">
+                            <option value="">All Anglers</option>
+                            @foreach (var angler in currentTrip.Anglers.Where(a => a.IsActive))
+                            {
+                                <option value="@angler.Id">@angler.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="disposition-filter">Disposition:</label>
+                        <select id="disposition-filter" @bind="selectedDispositionFilter" @bind:after="ApplyFilters">
+                            <option value="">All</option>
+                            <option value="@FishDisposition.Kept">Kept</option>
+                            <option value="@FishDisposition.Released">Released</option>
+                            <option value="@FishDisposition.InLivewell">In Livewell</option>
+                            <option value="@FishDisposition.Died">Died</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="sort-filter">Sort by:</label>
+                        <select id="sort-filter" @bind="selectedSortOption" @bind:after="ApplyFilters">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="species">Species Name</option>
+                            <option value="angler">Angler Name</option>
+                            <option value="size">Size (Largest First)</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (HasActiveFilters())
+                {
+                    <div class="filter-actions">
+                        <TouchButton Text="Clear Filters" Icon="🗑️" Variant="TouchButton.ButtonVariant.Secondary"
+                                   Size="TouchButton.ButtonSize.Small" OnClick="ClearFilters" />
+                        <span class="filter-count">Showing @filteredCatches.Count of @allCatches.Count catches</span>
+                    </div>
+                }
+            </ChildContent>
+        </InfoCard>
+
+        <!-- Catch List -->
+        @if (filteredCatches.Any())
+        {
+            <div class="catches-list">
+                @foreach (var fishCatch in filteredCatches)
+                {
+                    <div class="catch-card">
+                        <div class="catch-header">
+                            <div class="catch-species">
+                                <h3>@GetSpeciesName(fishCatch.SpeciesId)</h3>
+                                <span class="catch-time">@fishCatch.CaughtAt.ToString("MMM dd, HH:mm")</span>
+                            </div>
+                            <div class="catch-disposition @GetDispositionClass(fishCatch.Disposition)">
+                                @GetDispositionIcon(fishCatch.Disposition) @fishCatch.Disposition.ToString()
+                            </div>
+                        </div>
+
+                        <div class="catch-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Angler:</span>
+                                <span class="detail-value">@GetAnglerName(fishCatch.AnglerId)</span>
+                            </div>
+
+                            @if (fishCatch.Length.HasValue)
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Length:</span>
+                                    <span class="detail-value">@fishCatch.Length.Value.ToString("F1") inches</span>
+                                </div>
+                            }
+
+                            @if (fishCatch.Weight.HasValue)
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Weight:</span>
+                                    <span class="detail-value">@fishCatch.Weight.Value.ToString("F1") lbs</span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(fishCatch.BaitUsed))
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Bait:</span>
+                                    <span class="detail-value">@fishCatch.BaitUsed</span>
+                                </div>
+                            }
+
+                            @if (fishCatch.WaterDepth.HasValue)
+                            {
+                                <div class="detail-row">
+                                    <span class="detail-label">Depth:</span>
+                                    <span class="detail-value">@fishCatch.WaterDepth.Value.ToString("F0") ft</span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(fishCatch.Notes))
+                            {
+                                <div class="detail-row notes">
+                                    <span class="detail-label">Notes:</span>
+                                    <span class="detail-value">@fishCatch.Notes</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="catch-actions">
+                            <TouchButton Text="Edit" Icon="✏️" Variant="TouchButton.ButtonVariant.Secondary"
+                                       Size="TouchButton.ButtonSize.Small"
+                                       OnClick="@(() => EditCatch(fishCatch.Id))" />
+                            <TouchButton Text="Delete" Icon="🗑️" Variant="TouchButton.ButtonVariant.Danger"
+                                       Size="TouchButton.ButtonSize.Small"
+                                       OnClick="@(() => DeleteCatch(fishCatch.Id))" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <InfoCard Title="No Catches Found" Icon="🎣">
+                <ChildContent>
+                    @if (HasActiveFilters())
+                    {
+                        <p>No catches match your current filters. Try adjusting your search criteria.</p>
+                    }
+                    else
+                    {
+                        <p>No catches recorded for this trip yet. Start fishing to see your catches here!</p>
+                    }
+                </ChildContent>
+                <FooterActions>
+                    @if (HasActiveFilters())
+                    {
+                        <TouchButton Text="Clear Filters" Icon="🗑️" Variant="TouchButton.ButtonVariant.Secondary"
+                                   OnClick="ClearFilters" />
+                    }
+                    <TouchButton Text="Add Catch" Icon="🎣" Variant="TouchButton.ButtonVariant.Primary"
+                               OnClick="@(() => NavigateToPage("/catch"))" />
+                </FooterActions>
+            </InfoCard>
+        }
+    }
+</div>
+
+@code {
+    private FishingTrip? currentTrip;
+    private List<FishCatch> allCatches = new();
+    private List<FishCatch> filteredCatches = new();
+    private List<FishSpecies> availableSpecies = new();
+    private Dictionary<Guid, string> speciesNameCache = new();
+    private Dictionary<Guid, string> anglerNameCache = new();
+    private bool isLoading = true;
+
+    // Filter state
+    private string selectedSpeciesFilter = "";
+    private string selectedAnglerFilter = "";
+    private string selectedDispositionFilter = "";
+    private string selectedSortOption = "newest";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        
+        // Check for species filter from URL parameters
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var queryString = uri.Query;
+        if (!string.IsNullOrEmpty(queryString) && queryString.Contains("species="))
+        {
+            var speciesParam = queryString.Split('&')
+                .FirstOrDefault(q => q.StartsWith("species="));
+            if (speciesParam != null)
+            {
+                selectedSpeciesFilter = speciesParam.Split('=')[1];
+                await ApplyFilters();
+            }
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            currentTrip = await FishingTripService.GetCurrentTripAsync();
+            
+            if (currentTrip != null)
+            {
+                allCatches = currentTrip.Catches.ToList();
+                
+                // Load species data
+                var speciesIds = allCatches.Select(c => c.SpeciesId).Distinct();
+                availableSpecies = new List<FishSpecies>();
+                
+                foreach (var speciesId in speciesIds)
+                {
+                    var species = await FishSpeciesService.GetByIdAsync(speciesId);
+                    if (species != null)
+                    {
+                        availableSpecies.Add(species);
+                        speciesNameCache[species.Id] = species.Name;
+                    }
+                }
+                
+                availableSpecies = availableSpecies.OrderBy(s => s.Name).ToList();
+                
+                // Build angler name cache
+                foreach (var angler in currentTrip.Anglers)
+                {
+                    anglerNameCache[angler.Id] = angler.Name;
+                }
+                
+                await ApplyFilters();
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error loading catch history: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        var filtered = allCatches.AsEnumerable();
+
+        // Apply species filter
+        if (!string.IsNullOrEmpty(selectedSpeciesFilter) && Guid.TryParse(selectedSpeciesFilter, out var speciesId))
+        {
+            filtered = filtered.Where(c => c.SpeciesId == speciesId);
+        }
+
+        // Apply angler filter
+        if (!string.IsNullOrEmpty(selectedAnglerFilter) && Guid.TryParse(selectedAnglerFilter, out var anglerId))
+        {
+            filtered = filtered.Where(c => c.AnglerId == anglerId);
+        }
+
+        // Apply disposition filter
+        if (!string.IsNullOrEmpty(selectedDispositionFilter) && Enum.TryParse<FishDisposition>(selectedDispositionFilter, out var disposition))
+        {
+            filtered = filtered.Where(c => c.Disposition == disposition);
+        }
+
+        // Apply sorting
+        filtered = selectedSortOption switch
+        {
+            "newest" => filtered.OrderByDescending(c => c.CaughtAt),
+            "oldest" => filtered.OrderBy(c => c.CaughtAt),
+            "species" => filtered.OrderBy(c => GetSpeciesName(c.SpeciesId)),
+            "angler" => filtered.OrderBy(c => GetAnglerName(c.AnglerId)),
+            "size" => filtered.OrderByDescending(c => c.Length ?? 0),
+            _ => filtered.OrderByDescending(c => c.CaughtAt)
+        };
+
+        filteredCatches = filtered.ToList();
+        StateHasChanged();
+    }
+
+    private async Task ClearFilters()
+    {
+        selectedSpeciesFilter = "";
+        selectedAnglerFilter = "";
+        selectedDispositionFilter = "";
+        selectedSortOption = "newest";
+        await ApplyFilters();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrEmpty(selectedSpeciesFilter) ||
+               !string.IsNullOrEmpty(selectedAnglerFilter) ||
+               !string.IsNullOrEmpty(selectedDispositionFilter) ||
+               selectedSortOption != "newest";
+    }
+
+    private string GetSpeciesName(Guid speciesId)
+    {
+        return speciesNameCache.TryGetValue(speciesId, out var name) ? name : "Unknown Species";
+    }
+
+    private string GetAnglerName(Guid anglerId)
+    {
+        return anglerNameCache.TryGetValue(anglerId, out var name) ? name : "Unknown Angler";
+    }
+
+    private string GetDispositionClass(FishDisposition disposition)
+    {
+        return disposition switch
+        {
+            FishDisposition.Kept => "kept",
+            FishDisposition.Released => "released",
+            FishDisposition.InLivewell => "livewell",
+            FishDisposition.Died => "died",
+            _ => ""
+        };
+    }
+
+    private string GetDispositionIcon(FishDisposition disposition)
+    {
+        return disposition switch
+        {
+            FishDisposition.Kept => "🎯",
+            FishDisposition.Released => "🔄",
+            FishDisposition.InLivewell => "🪣",
+            FishDisposition.Died => "💀",
+            _ => "❓"
+        };
+    }
+
+    private async Task EditCatch(Guid catchId)
+    {
+        await NavigateToPage($"/catch?edit={catchId}");
+    }
+
+    private async Task DeleteCatch(Guid catchId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this catch?");
+        if (confirmed)
+        {
+            try
+            {
+                var success = await FishingTripService.RemoveCatchFromCurrentTripAsync(catchId);
+                if (success)
+                {
+                    await ShowSuccess("Catch deleted successfully!");
+                    await LoadData(); // Reload data
+                }
+                else
+                {
+                    await ShowError("Failed to delete catch. Please try again.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowError($"Error deleting catch: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task NavigateToPage(string url)
+    {
+        Navigation.NavigateTo(url);
+    }
+
+    private async Task ShowError(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+
+    private async Task ShowSuccess(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+}

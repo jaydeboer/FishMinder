@@ -1,0 +1,374 @@
+.species-dashboard {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 0 0 0.5rem 0;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Trip Summary */
+.trip-summary {
+    text-align: center;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.trip-highlights {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.trip-highlights p {
+    margin: 0.5rem 0;
+    color: var(--text-color);
+}
+
+/* Limit Alerts */
+.limit-alerts {
+    margin-bottom: 1rem;
+}
+
+.limit-alerts h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+}
+
+.limit-alerts.exceeded h4 {
+    color: var(--danger-color);
+}
+
+.limit-alerts.approaching h4 {
+    color: var(--warning-color);
+}
+
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.alert-item.exceeded {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+}
+
+.alert-item.approaching {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--warning-color);
+    color: var(--warning-color);
+}
+
+.species-name {
+    font-weight: bold;
+}
+
+.limit-info {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.angler-name {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Species Grid */
+.species-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.species-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.species-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.species-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.species-name {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.species-totals {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.total-caught {
+    font-weight: 500;
+}
+
+/* Species Breakdown */
+.species-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.breakdown-item {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.breakdown-item.kept {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-color: var(--success-color);
+}
+
+.breakdown-item.released {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-color: var(--info-color);
+}
+
+.breakdown-item.livewell {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: var(--warning-color);
+}
+
+.breakdown-item .count {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.breakdown-item.kept .count {
+    color: var(--success-color);
+}
+
+.breakdown-item.released .count {
+    color: var(--info-color);
+}
+
+.breakdown-item.livewell .count {
+    color: var(--warning-color);
+}
+
+.breakdown-item .label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Limit Progress */
+.limit-progress {
+    margin-bottom: 1.5rem;
+}
+
+.limit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.limit-label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.limit-count {
+    font-family: monospace;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.progress-fill.safe {
+    background-color: var(--success-color);
+}
+
+.progress-fill.approaching {
+    background-color: var(--warning-color);
+}
+
+.progress-fill.exceeded {
+    background-color: var(--danger-color);
+}
+
+.limit-status {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.limit-status.safe {
+    color: var(--success-color);
+}
+
+.limit-status.approaching {
+    color: var(--warning-color);
+}
+
+.limit-status.exceeded {
+    color: var(--danger-color);
+}
+
+/* Size Stats */
+.size-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+}
+
+.size-stat {
+    text-align: center;
+}
+
+.size-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.size-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Species Actions */
+.species-actions {
+    text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .species-dashboard {
+        padding: 0.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .species-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .species-card {
+        padding: 1rem;
+    }
+    
+    .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .species-breakdown {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .size-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

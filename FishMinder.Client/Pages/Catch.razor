@@ -5,14 +5,15 @@
 @inject IAnglerSessionService AnglerSessionService
 @inject IFishSpeciesService FishSpeciesService
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 @implements IDisposable
 
-<PageTitle>Add Catch - FishMinder</PageTitle>
+<PageTitle>@(isEditMode ? "Edit Catch" : "Add Catch") - FishMinder</PageTitle>
 
 <div class="catch-page">
     <div class="page-header">
-        <h1 class="page-title">🎣 Add Catch</h1>
-        <p class="page-subtitle">Quick entry for your latest catch</p>
+        <h1 class="page-title">🎣 @(isEditMode ? "Edit Catch" : "Add Catch")</h1>
+        <p class="page-subtitle">@(isEditMode ? "Update your catch details" : "Quick entry for your latest catch")</p>
     </div>
 
     @if (isLoading)
@@ -207,11 +208,36 @@
     private bool isLoading = true;
     private Dictionary<Guid, string> speciesNameCache = new();
 
+    // Edit mode variables
+    private bool isEditMode = false;
+    private Guid? editCatchId = null;
+    private FishCatch? originalCatch = null;
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            // Check for edit mode from URL parameters
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            var queryString = uri.Query;
+            if (!string.IsNullOrEmpty(queryString) && queryString.Contains("edit="))
+            {
+                var editParam = queryString.Split('&')
+                    .FirstOrDefault(q => q.StartsWith("edit="));
+                if (editParam != null && Guid.TryParse(editParam.Split('=')[1], out var catchId))
+                {
+                    isEditMode = true;
+                    editCatchId = catchId;
+                }
+            }
+
             await LoadInitialData();
+
+            // Load catch for editing if in edit mode
+            if (isEditMode && editCatchId.HasValue)
+            {
+                await LoadCatchForEditing(editCatchId.Value);
+            }
         }
         catch (Exception ex)
         {
@@ -343,10 +369,24 @@
             // Set the species ID and angler ID
             newCatch.SpeciesId = Guid.Parse(selectedSpeciesId);
             newCatch.AnglerId = activeAngler.Id;
-            newCatch.CaughtAt = DateTime.UtcNow;
 
-            // Add catch to current trip
-            var success = await FishingTripService.AddCatchToCurrentTripAsync(newCatch);
+            bool success;
+            string successMessage;
+
+            if (isEditMode && editCatchId.HasValue)
+            {
+                // Update existing catch
+                newCatch.ModifiedAt = DateTime.UtcNow;
+                success = await FishingTripService.UpdateCatchInCurrentTripAsync(newCatch);
+                successMessage = "Catch updated successfully!";
+            }
+            else
+            {
+                // Add new catch
+                newCatch.CaughtAt = DateTime.UtcNow;
+                success = await FishingTripService.AddCatchToCurrentTripAsync(newCatch);
+                successMessage = "Catch added successfully!";
+            }
 
             if (success)
             {
@@ -354,20 +394,28 @@
                 await FishSpeciesService.RecordSpeciesUsageAsync(newCatch.SpeciesId);
 
                 // Show success message
-                await ShowSuccess("Catch added successfully!");
+                await ShowSuccess(successMessage);
 
-                // Clear form and reload data
-                await ClearForm();
-                await LoadInitialData();
+                if (isEditMode)
+                {
+                    // Navigate back to catches page after edit
+                    Navigation.NavigateTo("/catches");
+                }
+                else
+                {
+                    // Clear form and reload data for new catch
+                    await ClearForm();
+                    await LoadInitialData();
+                }
             }
             else
             {
-                await ShowError("Failed to add catch. Please try again.");
+                await ShowError($"Failed to {(isEditMode ? "update" : "add")} catch. Please try again.");
             }
         }
         catch (Exception ex)
         {
-            await ShowError($"Error adding catch: {ex.Message}");
+            await ShowError($"Error {(isEditMode ? "updating" : "adding")} catch: {ex.Message}");
         }
     }
 
@@ -385,6 +433,61 @@
         // Reset species filter
         await FilterSpecies();
         StateHasChanged();
+    }
+
+    private async Task LoadCatchForEditing(Guid catchId)
+    {
+        try
+        {
+            var currentTrip = await FishingTripService.GetCurrentTripAsync();
+            if (currentTrip != null)
+            {
+                originalCatch = currentTrip.Catches.FirstOrDefault(c => c.Id == catchId);
+                if (originalCatch != null)
+                {
+                    // Copy the catch data to the form
+                    newCatch = new FishCatch
+                    {
+                        Id = originalCatch.Id,
+                        AnglerId = originalCatch.AnglerId,
+                        SpeciesId = originalCatch.SpeciesId,
+                        CaughtAt = originalCatch.CaughtAt,
+                        Location = originalCatch.Location,
+                        Disposition = originalCatch.Disposition,
+                        Length = originalCatch.Length,
+                        Weight = originalCatch.Weight,
+                        Notes = originalCatch.Notes,
+                        PhotoPath = originalCatch.PhotoPath,
+                        BaitUsed = originalCatch.BaitUsed,
+                        WaterDepth = originalCatch.WaterDepth,
+                        WaterTemperature = originalCatch.WaterTemperature,
+                        WeatherConditions = originalCatch.WeatherConditions,
+                        CreatedAt = originalCatch.CreatedAt,
+                        ModifiedAt = originalCatch.ModifiedAt
+                    };
+
+                    selectedSpeciesId = originalCatch.SpeciesId.ToString();
+
+                    // Load the angler who caught this fish as active angler
+                    var angler = currentTrip.Anglers.FirstOrDefault(a => a.Id == originalCatch.AnglerId);
+                    if (angler != null)
+                    {
+                        activeAngler = angler;
+                        sessionStats = await AnglerSessionService.GetSessionStatsAsync(angler.Id);
+                    }
+                }
+                else
+                {
+                    await ShowError("Catch not found. It may have been deleted.");
+                    Navigation.NavigateTo("/catches");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Error loading catch for editing: {ex.Message}");
+            Navigation.NavigateTo("/catches");
+        }
     }
 
     private string GetSpeciesName(Guid speciesId)

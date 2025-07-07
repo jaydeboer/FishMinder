@@ -2,6 +2,7 @@
 @using FishMinder.Client.Models
 @using FishMinder.Client.Services
 @inject IFishingTripService FishingTripService
+@inject ISpeciesCountService SpeciesCountService
 @inject IJSRuntime JSRuntime
 
 <PageTitle>FishMinder Dashboard</PageTitle>
@@ -47,19 +48,19 @@
             <ChildContent>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-number">0</div>
+                        <div class="stat-number">@(currentTrip?.TotalCatches ?? 0)</div>
                         <div class="stat-label">Total Catches</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">0</div>
+                        <div class="stat-number">@tripStats.UniqueSpecies</div>
                         <div class="stat-label">Species</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">0</div>
+                        <div class="stat-number">@(currentTrip?.Anglers.Count(a => a.IsActive) ?? 0)</div>
                         <div class="stat-label">Anglers</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">0</div>
+                        <div class="stat-number">@totalTrips</div>
                         <div class="stat-label">Trips</div>
                     </div>
                 </div>
@@ -93,10 +94,13 @@
 @code {
     private FishingTrip? currentTrip;
     private bool isLoading = false;
+    private TripSpeciesStatistics tripStats = new();
+    private int totalTrips = 0;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCurrentTrip();
+        await LoadStatistics();
     }
 
     private async Task LoadCurrentTrip()
@@ -109,6 +113,27 @@
         catch (Exception ex)
         {
             await ShowError($"Failed to load trip data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            if (currentTrip != null)
+            {
+                tripStats = await SpeciesCountService.GetTripSpeciesStatisticsAsync();
+            }
+
+            // Load total trips count
+            var allTrips = await FishingTripService.GetTripsOrderedByDateAsync();
+            totalTrips = allTrips.Count();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await ShowError($"Failed to load statistics: {ex.Message}");
         }
     }
 
