@@ -134,7 +134,8 @@ ipch/
 *.sap
 
 # Visual Studio Trace Files
-*.e2e
+*.e2e.xml
+*.e2e.json
 
 # TFS 2012 Local Workspace
 $tf/
